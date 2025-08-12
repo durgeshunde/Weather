@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather </title>
+<style>
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(-45deg, #74ABE2, #5563DE, #8E54E9, #4776E6);
+        background-size: 400% 400%;
+        animation: gradientBG 12s ease infinite;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 100vh;
+        color: white;
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    h1 {
+        margin-top: 30px;
+        font-size: 2.2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .weather-box {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        margin-top: 20px;
+        width: 320px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        position: relative;
+    }
+    input {
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        width: 180px;
+        outline: none;
+        font-size: 1rem;
+    }
+    button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        margin-left: 5px;
+        background: #ff9800;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    button:hover {
+        background: #e68900;
+    }
+    #weatherResult img {
+        width: 80px;
+        height: 80px;
+    }
+    #weatherResult h3 {
+        margin-bottom: 5px;
+    }
+    .suggestions {
+        position: absolute;
+        top: 52px;
+        left: 0;
+        right: 0;
+        background: white;
+        color: black;
+        border-radius: 5px;
+        max-height: 150px;
+        overflow-y: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+    }
+    .suggestions div {
+        padding: 8px;
+        cursor: pointer;
+    }
+    .suggestions div:hover {
+        background: #eee;
+    }
+    .footer {
+        margin-top: auto;
+        padding: 15px;
+        font-size: 0.9rem;
+        opacity: 0.85;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+    }
+</style>
+</head>
+<body>
+
+<h1>Weather App</h1>
+<div class="weather-box">
+    <input type="text" id="cityInput" placeholder="Enter city name" oninput="getSuggestions(this.value)">
+    <button onclick="getWeather(event)">Get Weather</button>
+    <div class="suggestions" id="suggestions"></div>
+    <div id="weatherResult" style="margin-top:15px;"></div>
+</div>
+
+<div class="footer">Made by Durgesh</div>
+
+<script>
+    const API_KEY = "2922d56a5b92a1ce2a50b3ef82f2cff1"; // Your API Key
+
+    async function getSuggestions(query) {
+        const suggestionsBox = document.getElementById("suggestions");
+        suggestionsBox.innerHTML = "";
+        if (query.length < 2) return; // start after 2 chars
+
+        try {
+            const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${API_KEY}`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            data.forEach(city => {
+                const div = document.createElement("div");
+                div.textContent = `${city.name}, ${city.country}`;
+                div.onclick = () => {
+                    document.getElementById("cityInput").value = city.name + "," + city.country;
+                    suggestionsBox.innerHTML = "";
+                };
+                suggestionsBox.appendChild(div);
+            });
+        } catch (error) {
+            console.log("Error fetching suggestions");
+        }
+    }
+
+    async function getWeather(event) {
+        if (event) event.preventDefault(); // stop refresh
+
+        const city = document.getElementById("cityInput").value.trim();
+        if (!city) {
+            document.getElementById("weatherResult").innerHTML = "Please enter a city.";
+            return;
+        }
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.cod === "404") {
+                document.getElementById("weatherResult").innerHTML = "City not found.";
+                return;
+            }
+
+            const icon = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+
+            document.getElementById("weatherResult").innerHTML = `
+                <img src="${icon}" alt="Weather icon">
+                <h3>${data.name}, ${data.sys.country}</h3>
+                <p><strong>🌡 Temperature:</strong> ${data.main.temp}°C</p>
+                <p><strong>💧 Humidity:</strong> ${data.main.humidity}%</p>
+                <p><strong>☁ Weather:</strong> ${data.weather[0].description}</p>
+            `;
+        } catch (error) {
+            document.getElementById("weatherResult").innerHTML = "Error fetching weather.";
+        }
+    }
+</script>
+
+</body>
+</html>
